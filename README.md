@@ -14,6 +14,7 @@ The Lab requires you to have two OpenShift clusters. It is possible to use OpenS
 We create a context for each of the clusters named:
 * east 
 * west
+
 Further notice that the Lab is based upon Red Hat OpenShift 4.14. Feel free to use any other OpenShift version but ensure to adjust the versions of the Operators accordingly.
 
 If possible select different Service/Podnetwork IP ranges to identify responses easier in later stages.
@@ -24,7 +25,8 @@ The Lab also is based on the base domain `example.com` as well as subdomains
 
 References to those names need to be adjusted if you choose to use a different name accordingly.
 Furthermore we need the `kube configuration`  for each cluster and context in a separate file. The content of the file is YAML syntax and you can either copy&paste from your existing `~/.kube/config` file 
-Note: for simplification I removed the certificate bits and set insecure-skup-tls-verify, your configuration should match the Administrative/RBAC-granted access to the Clusters accordingly.
+
+Note: for simplification I removed the certificate bits and set insecure-skip-tls-verify, your configuration should match the Administrative/RBAC-granted access to the Clusters accordingly.
 
 ```
 # cat kubeconfig.east
@@ -78,7 +80,9 @@ for Red Hat OpenShift Service Mesh we need following operators to be available
 * Red Hat OpenShift distributed tracing platform (Jaeger)
 * Kiali Operator
 * Red Hat OpenShift Service Mesh
+
 using the cli we need to create a namespace and an OperatorGroup for the openshift-distributed-tracing operator
+
 ```
 # cat <<EOF | oc --context east create -f -
 apiVersion: v1
@@ -235,6 +239,7 @@ You should end up with 4 files per cluster
 * root-cert.pem, the root certificate
 
 Let's create the `istio-system` namespace and add the certificates we created.
+
 Note that we also label the namespaces with istio topology labels.
 
 ```
@@ -281,6 +286,7 @@ wait for both SMCP's to be rolled out accordingly
 ### East-West Gateway configuration
 
 The east-west gateway handles the communication with the other cluster.  For the Lab scaling the gateway similar as ingress/egress gateways isn't necessary but for sure it will be later in the game.
+
 Note the Lab uses `NodePort` for receiving the traffic and using a route is not possible due to the protocol not sending a SNI header.
 
 ```
@@ -331,6 +337,7 @@ Those configuration will now be added a secret for Istio to be used. The annotat
 
 Even though the bookinfo app is the commonly used one for Service Mesh, I decided to use a mockbin service in addition to simplify and demonstrate the capabilities.
 The mockbin service is self-made as I utilize it for various use-cases in relation to Service Mesh. Please feel free to exchange it with a sleep or any other httpbin/mockbin service of your choice.
+
 Note in replacing various outputs might differ or might not be available as described further.
 ```
 # oc --context east create -k mockbin/overlays/east/
@@ -504,7 +511,7 @@ west-mockbin ->> productpage: bookinfo ?
 productpage ->> west-mockbin: info...
 west-mockbin ->> east-mockbin: info...
 ```
-in the Kiali UI iw till look like
+in the Kiali UI it will look like
 ![enter image description here](pictures/east-west-bookinfo.png)
 
 ## SPIFFY and RBAC in multi-cluster setups
