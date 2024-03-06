@@ -1,0 +1,17 @@
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: west-mockbin
+  namespace: istio-system
+spec:
+  host: mockbin.apps.west.example.com
+  to:
+    kind: Service
+    name: istio-ingressgateway
+    weight: 100
+  port:
+    targetPort: https
+  tls:
+    termination: passthrough
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None

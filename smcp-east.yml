@@ -1,0 +1,68 @@
+apiVersion: maistra.io/v2
+kind: ServiceMeshControlPlane
+metadata:
+  name: basic
+spec:
+  addons:
+    grafana:
+      enabled: true
+    jaeger:
+      install:
+        storage:
+          type: Memory
+    kiali:
+      enabled: true
+    prometheus:
+      enabled: true
+  cluster:
+    name: east-cluster
+    network: east-network
+    multiCluster:
+      enabled: true
+      meshNetworks:
+        west-network:
+          endpoints:
+          - fromRegistry: west-cluster
+          gateways:
+          - address: 192.168.193.241
+            port: 30443
+  gateways:
+    egress:
+      enabled: true
+    ingress:
+      sds:
+        enabled: true
+      enabled: true
+    enabled: true
+    openshiftRoute:
+      enabled: false
+  general:
+    logging:
+      componentLevels:
+        default: info
+  mode: ClusterWide
+  meshConfig:
+    discoverySelectors:
+    - matchLabels:
+        istio-injection: enabled
+  proxy:
+    accessLogging:
+      file:
+        name: /dev/stdout
+  security:
+    controlPlane:
+      mtls: true
+    dataPlane:
+      mtls: true
+      automtls: true
+    identity:
+      type: ThirdParty
+    manageNetworkPolicy: false
+  techPreview:
+    global:
+      meshID: east
+  tracing:
+    type: Jaeger
+    sampling: 10000
+  telemetry:
+    type: Istiod

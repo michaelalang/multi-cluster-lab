@@ -1,0 +1,167 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  creationTimestamp: null
+  labels:
+    istio-injection: enabled
+  name: west
+spec: {}
+status: {}
+---
+apiVersion: v1
+data:
+  SRV_NAME: west
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  name: instance
+  namespace: west
+---
+apiVersion: v1
+data:
+  client.json: ewogICJ3ZWIiOiB7CiAgICAidG9rZW5faW50cm9zcGVjdGlvbl91cmkiOiAiaHR0cHM6Ly9zc28uZXhhbXBsZS5jb20vcmVhbG1zL2V4YW1wbGUvcHJvdG9jb2wvb3BlbmlkLWNvbm5lY3QvdG9rZW4vaW50cm9zcGVjdCIsCiAgICAiY2xpZW50X2lkIjogImV4YW1wbGUiLAogICAgImNsaWVudF9zZWNyZXQiOiAiLi4uIiwKICAgICJ3ZWxsLWtub3duIjogImh0dHBzOi8vc3NvLmV4YW1wbGUuY29tL3JlYWxtcy9Ib21lLy53ZWxsLWtub3duL29wZW5pZC1jb25maWd1cmF0aW9uIiwKICAgICJpc3N1ZXIiOiAiaHR0cHM6Ly9zc28uZXhhbXBsZS5jb20vcmVhbG1zL2V4YW1wbGUiCiAgfSwKICAidG9rZW4iOiB7CiAgICAidXNlcm5hbWUiOiAiLi4uIiwKICAgICJncm91cCI6ICIuLi4iCiAgfQp9Cg==
+kind: Secret
+metadata:
+  creationTimestamp: null
+  name: mockbin-oidc
+  namespace: west
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: west
+    app.kubernetes.io/component: mockbin
+    app.kubernetes.io/instance: mockbin
+    version: v1
+  name: west
+  namespace: west
+spec:
+  ports:
+  - name: http-8080
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: west
+    deployment: west
+    version: v1
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: mockbin
+    app.kubernetes.io/component: mockbin
+    app.kubernetes.io/instance: mockbin
+    version: v1
+  name: west
+  namespace: west
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: west
+      deployment: west
+      version: v1
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        sidecar.istio.io/inject: "true"
+        app: west
+        deployment: west
+        version: v1
+    spec:
+      containers:
+      - env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: SRV_NAME
+          valueFrom:
+            configMapKeyRef:
+              key: SRV_NAME
+              name: instance
+        - name: OTEL_GRPC_ENDPOINT
+          value: http://jaeger-collector.istio-system.svc.cluster.local:4317
+        - name: WEB_CONCURRENCY
+          value: "1"
+        - name: CONFIG
+          value: /var/run/oidc/client.json
+        image: quay.io/rhn_support_milang/mockbin:latest
+        imagePullPolicy: Always
+        name: west
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /var/run/oidc/client.json
+          name: oidc-secret
+          readOnly: true
+          subPath: client.json
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 3
+      volumes:
+      - name: oidc-secret
+        secret:
+          defaultMode: 420
+          secretName: mockbin-oidc
+      - configMap:
+          name: instance
+          optional: true
+        name: instance
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: west
+  namespace: west
+spec:
+  host: west.west.svc.cluster.local
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: west
+  namespace: west
+spec:
+  gateways:
+  - istio-system/frontend-gateway-example
+  hosts:
+  - mockbin.apps.west.example.com
+  http:
+  - route:
+    - destination:
+        host: west.west.svc.cluster.local
+        port:
+          number: 8080
+      weight: 100
+  tls:
+  - match:
+    - port: 443
+      sniHosts:
+      - mockbin.apps.west.example.com
+    route:
+    - destination:
+        host: west.west.svc.cluster.local
+        port:
+          number: 8080
+      weight: 100
+---

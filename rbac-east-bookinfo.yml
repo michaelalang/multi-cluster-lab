@@ -1,0 +1,15 @@
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: productpage-viewer
+  namespace: bookinfo
+spec:
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/west/sa/default
+        - cluster.local/ns/east/sa/default
+  selector:
+    matchLabels:
+      app: productpage

@@ -1,0 +1,21 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  labels:
+    app: jaeger
+    app.kubernetes.io/component: service-collector
+    app.kubernetes.io/instance: jaeger
+    app.kubernetes.io/managed-by: jaeger-operator
+    app.kubernetes.io/name: jaeger-collector
+    app.kubernetes.io/part-of: jaeger
+  name: jaeger-collector
+  namespace: istio-system
+spec:
+  host: jaeger-collector.apps.west.example.com
+  port:
+    targetPort: http-c-binary-trft
+  to:
+    kind: Service
+    name: jaeger-collector
+    weight: 100
+  wildcardPolicy: None
