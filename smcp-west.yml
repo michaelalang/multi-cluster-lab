@@ -13,7 +13,7 @@ spec:
     kiali:
       enabled: true
     prometheus:
-      enabled: false
+      enabled: true
   cluster:
     name: west-cluster
     network: west-network
