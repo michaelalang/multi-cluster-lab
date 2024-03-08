@@ -24,7 +24,7 @@ spec:
           endpoints:
           - fromRegistry: east-cluster
           gateways:
-          - address: 192.168.193.237
+          - address: gw.east.example.com
             port: 30443
   gateways:
     egress:
